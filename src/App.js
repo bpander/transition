@@ -33,7 +33,7 @@ export default class App extends Component {
               <li key={key}>
                 <div
                   className="square"
-                  style={{ transform: `translateX(${style.x}px)` }}
+                  style={{ transform: `translateX(${style.x.value}px)` }}
                 />
               </li>
             ))}
