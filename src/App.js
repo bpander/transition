@@ -26,10 +26,10 @@ export default class App extends Component {
       <div>
         <button onClick={this.onClick}>Toggle</button>
         <Transition
-          styles={this.state.numbers.map((n, i) => this.numberToStyle(n, i))}
-        >{transitions => (
+          configs={this.state.numbers.map((n, i) => this.numberToStyle(n, i))}
+        >{interpolations => (
           <ul className="absoluteChildren">
-            {transitions.map(({ key, data, style }) => (
+            {interpolations.map(({ key, data, style }) => (
               <li key={key}>
                 <div
                   className="square"

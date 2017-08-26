@@ -1,3 +1,5 @@
+import { map, some } from 'lib/objects';
+import * as steppers from 'lib/steppers';
 import React from 'react';
 
 const LINEAR = 'LINEAR';
@@ -9,40 +11,39 @@ export const linear = (target = 0, overrides = {}) => ({
   ...overrides,
 });
 
-const step = (styleA, styleB, deltaT) => {
-  const direction = (styleB.target > styleA.value) ? 1 : -1;
-  let newValue = styleA.value + styleB.v * (deltaT / 1000) * direction;
-  const isComplete = (styleA.value < styleB.target && newValue >= styleB.target)
-    || (styleA.value > styleB.target && newValue <= styleB.target);
-  if (isComplete) {
-    newValue = styleB.target;
-  }
-  return { ...styleB, value: newValue };
+
+const step = (interpolation, config, deltaT) => {
+  const newInterpolation = {
+    ...interpolation,
+    style: map(interpolation.style, (style, key) => {
+      const configStyle = config.style[key];
+      switch (configStyle.type) {
+        case LINEAR:  return steppers.linear(style, config.style[key], deltaT);
+        default:      return configStyle;
+      }
+    }),
+  };
+  return newInterpolation;
 };
 
-const merge = (interpolations, transitions, deltaT) => {
+const merge = (interpolations, configs, deltaT) => {
   return interpolations.map(interpolation => {
-    const transition = transitions.find(t => t.key === interpolation.key);
-    for (const key in interpolation.style) {
-      interpolation.style[key] = step(interpolation.style[key], transition.style[key], deltaT);
-    }
-    return interpolation;
+    const transition = configs.find(t => t.key === interpolation.key);
+    return step(interpolation, transition, deltaT);
   });
 };
 
-const shouldAnimate = styles => Object.keys(styles).some(key => {
-  const style = styles[key];
-  return Object.keys(style.style).some(styleKey => {
-    const thing = style.style[styleKey];
-    return thing.value !== thing.target;
+const shouldAnimate = interpolations => {
+  return some(interpolations, interpolation => {
+    return some(interpolation.style, style => style.value !== style.target);
   });
-});
+};
 
 export default class Transition extends React.Component {
 
   static defaultProps = {
     children: () => {},
-    styles: [],
+    interpolations: [],
   };
 
   constructor(props) {
@@ -53,7 +54,7 @@ export default class Transition extends React.Component {
     this.lastKnownTime = performance.now();
 
     this.state = {
-      styles: props.styles,
+      interpolations: props.configs,
     };
   }
 
@@ -66,15 +67,15 @@ export default class Transition extends React.Component {
   onAnimationFrame = () => {
     const now = performance.now();
     const deltaT = now - this.lastKnownTime;
-    const styles = merge(this.state.styles, this.props.styles, deltaT);
-    this.setState({ styles });
+    const interpolations = merge(this.state.interpolations, this.props.configs, deltaT);
+    this.setState({ interpolations });
     this.lastKnownTime = now;
-    if (shouldAnimate(styles)) {
+    if (shouldAnimate(interpolations)) {
       this.afId = requestAnimationFrame(this.onAnimationFrame);
     }
   };
 
   render() {
-    return this.props.children(this.state.styles);
+    return this.props.children(this.state.interpolations);
   }
 }
