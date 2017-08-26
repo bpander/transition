@@ -12,8 +12,15 @@ export default class App extends Component {
     };
   }
 
-  onClick = () => {
+  onMoveClick = () => {
     this.setState({ isToggled: !this.state.isToggled });
+  };
+
+  onAddClick = () => {
+    const numbers = [ ...this.state.numbers ];
+    const randomIndex = Math.round(Math.random() * numbers.length);
+    numbers.splice(randomIndex, 0, Math.random());
+    this.setState({ numbers });
   };
 
   numberToStyle(number, i) {
@@ -24,7 +31,8 @@ export default class App extends Component {
   render() {
     return (
       <div>
-        <button onClick={this.onClick}>Toggle</button>
+        <button onClick={this.onMoveClick}>Move</button>
+        <button onClick={this.onAddClick}>Add</button>
         <Transition
           configs={this.state.numbers.map((n, i) => this.numberToStyle(n, i))}
         >{interpolations => (

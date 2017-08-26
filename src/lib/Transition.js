@@ -27,9 +27,12 @@ const step = (interpolation, config, deltaT) => {
 };
 
 const merge = (interpolations, configs, deltaT) => {
-  return interpolations.map(interpolation => {
-    const transition = configs.find(t => t.key === interpolation.key);
-    return step(interpolation, transition, deltaT);
+  return configs.map(config => {
+    const interpolation = interpolations.find(i => i.key === config.key);
+    if (!interpolation) {
+      return config;
+    }
+    return step(interpolation, config, deltaT);
   });
 };
 
