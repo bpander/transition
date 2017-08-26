@@ -1,7 +1,7 @@
 import React from 'react';
 
 const LINEAR = 'LINEAR';
-const defaults = { type: LINEAR, value: 0, v: 10, target: 0, delay: 0 };
+const defaults = { type: LINEAR, value: 0, v: 100, target: 0, delay: 0 };
 export const linear = (target = 0, overrides = {}) => ({
   ...defaults,
   target,
@@ -9,17 +9,34 @@ export const linear = (target = 0, overrides = {}) => ({
   ...overrides,
 });
 
-const merge = (interpolations, transitions, deltaT = 0) => {
+const step = (styleA, styleB, deltaT) => {
+  const direction = (styleB.target > styleA.value) ? 1 : -1;
+  let newValue = styleA.value + styleB.v * (deltaT / 1000) * direction;
+  const isComplete = (styleA.value < styleB.target && newValue >= styleB.target)
+    || (styleA.value > styleB.target && newValue <= styleB.target);
+  if (isComplete) {
+    newValue = styleB.target;
+  }
+  return { ...styleB, value: newValue };
+};
+
+const merge = (interpolations, transitions, deltaT) => {
   return interpolations.map(interpolation => {
     const transition = transitions.find(t => t.key === interpolation.key);
     for (const key in interpolation.style) {
-      interpolation.style[key].value += transition.style[key].v;
+      interpolation.style[key] = step(interpolation.style[key], transition.style[key], deltaT);
     }
     return interpolation;
   });
 };
 
-const shouldAnimate = () => true;
+const shouldAnimate = styles => Object.keys(styles).some(key => {
+  const style = styles[key];
+  return Object.keys(style.style).some(styleKey => {
+    const thing = style.style[styleKey];
+    return thing.value !== thing.target;
+  });
+});
 
 export default class Transition extends React.Component {
 
